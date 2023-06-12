@@ -104,7 +104,9 @@ public final class EncryptOrderByItemTokenGenerator implements CollectionSQLToke
         }
         Collection<OrderByItem> result = new LinkedList<>();
         SelectStatementContext statementContext = (SelectStatementContext) sqlStatementContext;
-        result.addAll(statementContext.getOrderByContext().getItems());
+        if (!statementContext.getOrderByContext().isGenerated()) {
+            result.addAll(statementContext.getOrderByContext().getItems());
+        }
         result.addAll(statementContext.getGroupByContext().getItems());
         for (SelectStatementContext each : statementContext.getSubqueryContexts().values()) {
             result.addAll(getOrderByItems(each));
