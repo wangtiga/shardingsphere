@@ -29,6 +29,7 @@ import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.Tab
 import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 
 import javax.sql.DataSource;
+import java.sql.ResultSetMetaData;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -92,13 +93,16 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
     
     private Map<String, Collection<ColumnMetaData>> loadColumnMetaDataMap(final Connection connection, final Collection<String> tables) throws SQLException {
         Map<String, Collection<ColumnMetaData>> result = new HashMap<>(tables.size(), 1);
-        try (PreparedStatement preparedStatement = connection.prepareStatement(getTableMetaDataSQL(tables, connection.getMetaData()))) {
+        String sqlGetMetaData = getTableMetaDataSQL(tables, connection.getMetaData());
+        System.out.println("loadColumnMetaDataMap sqlGetMetaData= " + sqlGetMetaData);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sqlGetMetaData)) {
             Map<String, Integer> dataTypes = new DataTypeLoader().load(connection.getMetaData(), TypedSPILoader.getService(DatabaseType.class, getType()));
             Map<String, Collection<String>> tablePrimaryKeys = loadTablePrimaryKeys(connection, tables);
             preparedStatement.setString(1, connection.getSchema());
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
                     String tableName = resultSet.getString("TABLE_NAME");
+                    System.out.println("loadColumnMetaDataMap tableName=" + tableName);
                     ColumnMetaData columnMetaData = loadColumnMetaData(dataTypes, resultSet, tablePrimaryKeys.getOrDefault(tableName, Collections.emptyList()), connection.getMetaData());
                     if (!result.containsKey(tableName)) {
                         result.put(tableName, new LinkedList<>());
@@ -112,13 +116,26 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
     
     private ColumnMetaData loadColumnMetaData(final Map<String, Integer> dataTypeMap, final ResultSet resultSet, final Collection<String> primaryKeys,
                                               final DatabaseMetaData databaseMetaData) throws SQLException {
+        ResultSetMetaData rsMeta = resultSet.getMetaData();
+        System.out.println("loadColumnMetaData ResultSetMetaData");
+        for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
+            String colName = rsMeta.getColumnName(i);
+            Object colVal = resultSet.getObject(i);
+            System.out.println("loadColumnMetaData colName=" + colName + "  colVal=" + colVal);
+        }
+        boolean containsCollation = versionContainsCollation(databaseMetaData);
+        System.out.println("loadColumnMetaData containsCollation=" + containsCollation);
+        
         String columnName = resultSet.getString("COLUMN_NAME");
         String dataType = getOriginalDataType(resultSet.getString("DATA_TYPE"));
         boolean primaryKey = primaryKeys.contains(columnName);
         boolean generated = versionContainsIdentityColumn(databaseMetaData) && "YES".equals(resultSet.getString("IDENTITY_COLUMN"));
         // TODO need to support caseSensitive when version < 12.2.
-        String collation = resultSet.getString("COLLATION");
-        boolean caseSensitive = versionContainsCollation(databaseMetaData) && null != collation && collation.endsWith("_CS");
+        String collation = null;
+        if (containsCollation) {
+            resultSet.getString("COLLATION");
+        }
+        boolean caseSensitive = null != collation && collation.endsWith("_CS");
         boolean isVisible = "NO".equals(resultSet.getString("HIDDEN_COLUMN"));
         return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive, isVisible, false);
     }
