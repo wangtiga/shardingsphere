@@ -137,7 +137,14 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
         }
         boolean caseSensitive = null != collation && collation.endsWith("_CS");
         boolean isVisible = "NO".equals(resultSet.getString("HIDDEN_COLUMN"));
-        return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive, isVisible, false);
+        int iDataType = java.sql.Types.VARCHAR;
+        Integer value = dataTypeMap.get(dataType);
+        if (value != null) {
+            iDataType = value.intValue();
+        } else {
+            iDataType = java.sql.Types.VARCHAR;
+        }
+        return new ColumnMetaData(columnName, iDataType, primaryKey, generated, caseSensitive, isVisible, false);
     }
     
     private String getOriginalDataType(final String dataType) {
