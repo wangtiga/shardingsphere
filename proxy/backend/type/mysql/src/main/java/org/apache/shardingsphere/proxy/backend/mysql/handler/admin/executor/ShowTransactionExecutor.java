@@ -38,9 +38,9 @@ import java.util.Collections;
 @Getter
 public final class ShowTransactionExecutor implements DatabaseAdminQueryExecutor {
     
-    public static final String TRANSACTION_READ_ONLY = "@@session.tx_read_only";
+    public static final String TRANSACTION_READ_ONLY = "@@session.transaction_read_only";
     
-    public static final String TRANSACTION_ISOLATION = "@@session.tx_isolation";
+    public static final String TRANSACTION_ISOLATION = "@@session.transaction_isolation";
     
     private MergedResult mergedResult;
     
