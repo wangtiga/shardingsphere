@@ -111,4 +111,9 @@
         <input sql="SELECT * FROM (SELECT a1.* FROM t_account a1 INNER JOIN t_account a2) AS temp" />
         <output sql="SELECT `temp`.`account_id`, `temp`.`cipher_certificate_number` AS `certificate_number`, `temp`.`cipher_password` AS `password`, `temp`.`cipher_amount` AS `amount` FROM (SELECT `a1`.`account_id`, `a1`.`cipher_certificate_number`, `a1`.`assisted_query_certificate_number`, `a1`.`cipher_password`, `a1`.`assisted_query_password`, `a1`.`cipher_amount` FROM t_account a1 INNER JOIN t_account a2) AS temp" />
     </rewrite-assertion>
+
+    <rewrite-assertion id="select_shorthand_from_sub_query_with_select_join_and_select_count" db-types="MySQL">
+        <input sql="SELECT count(*) FROM ( SELECT a1.* FROM t_account a1 LEFT JOIN ( SELECT account_id FROM t_account_detail ) d1 ON d1.account_id = a1.account_id LEFT JOIN ( SELECT account_id FROM t_account_detail ) d2 ON d2.account_id = a1.account_id ) temp" />
+        <output sql="SELECT count(*) FROM ( SELECT `a1`.`account_id`, `a1`.`cipher_certificate_number`, `a1`.`assisted_query_certificate_number`, `a1`.`cipher_password`, `a1`.`assisted_query_password`, `a1`.`cipher_amount` FROM t_account a1 LEFT JOIN ( SELECT account_id FROM t_account_detail ) d1 ON d1.account_id = a1.account_id LEFT JOIN ( SELECT account_id FROM t_account_detail ) d2 ON d2.account_id = a1.account_id ) temp" />
+    </rewrite-assertion>
 </rewrite-assertions>
