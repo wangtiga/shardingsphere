@@ -70,8 +70,14 @@ public final class ColumnMetaDataLoader {
                     columnTypes.add(resultSet.getInt(DATA_TYPE));
                     isPrimaryKeys.add(primaryKeys.contains(columnName));
                     columnNames.add(columnName);
+                } else {
+                    System.out.println("ColumnMetaData load fail1 tableNamePattern != tableName tableNamePattern=" + tableNamePattern + " tableName=" + tableName);
                 }
             }
+        }
+        if (columnNames.size() == 0) {
+            System.out.println("ColumnMetaData load fail2 columnNames.size=0 tableNamePattern=" + tableNamePattern);
+            return result;
         }
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(generateEmptyResultSQL(tableNamePattern, columnNames, databaseType))) {
             for (int i = 0; i < columnNames.size(); i++) {
@@ -85,7 +91,9 @@ public final class ColumnMetaDataLoader {
     
     private static String generateEmptyResultSQL(final String table, final List<String> columnNames, final DatabaseType databaseType) {
         String wrappedColumnNames = columnNames.stream().map(each -> databaseType.getQuoteCharacter().wrap(each)).collect(Collectors.joining(","));
-        return String.format("SELECT %s FROM %s WHERE 1 != 1", wrappedColumnNames, databaseType.getQuoteCharacter().wrap(table));
+        String emptySql = String.format("SELECT %s FROM %s WHERE 1 != 1", wrappedColumnNames, databaseType.getQuoteCharacter().wrap(table));
+        System.out.println("generateEmptyResultSQL " + emptySql);
+        return emptySql;
     }
     
     private static Collection<String> loadPrimaryKeys(final Connection connection, final String table) throws SQLException {
