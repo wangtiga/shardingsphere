@@ -29,6 +29,8 @@ import org.apache.shardingsphere.sql.parser.core.SQLParserFactory;
 import org.apache.shardingsphere.sql.parser.exception.SQLParsingException;
 import org.apache.shardingsphere.sql.parser.spi.DatabaseTypedSQLParserFacade;
 
+import java.util.ArrayList;
+
 /**
  * SQL parser executor.
  */
@@ -52,8 +54,9 @@ public final class SQLParserExecutor {
     }
     
     private ParseASTNode twoPhaseParse(final String sql) {
+        String decorateSql = decorateKeyWord(sql);
         DatabaseTypedSQLParserFacade sqlParserFacade = TypedSPILoader.getService(DatabaseTypedSQLParserFacade.class, databaseType);
-        SQLParser sqlParser = SQLParserFactory.newInstance(sql, sqlParserFacade.getLexerClass(), sqlParserFacade.getParserClass());
+        SQLParser sqlParser = SQLParserFactory.newInstance(decorateSql, sqlParserFacade.getLexerClass(), sqlParserFacade.getParserClass());
         try {
             ((Parser) sqlParser).getInterpreter().setPredictionMode(PredictionMode.SLL);
             return (ParseASTNode) sqlParser.parse();
@@ -65,8 +68,65 @@ public final class SQLParserExecutor {
             try {
                 return (ParseASTNode) sqlParser.parse();
             } catch (final ParseCancellationException e) {
-                throw new SQLParsingException(sql + ", " + e.getMessage());
+                throw new SQLParsingException(decorateSql + ", " + e.getMessage());
             }
         }
+    }
+
+    // 修饰保留关键字LEVEL作为表字段
+    private static String decorateKeyWord(String sql) {
+        String sqlUpper = sql.toUpperCase();
+        ArrayList<Integer> levelStartIndexs = new ArrayList<>();
+        int fromIndex = 0;
+        while (fromIndex < sqlUpper.length()) {
+            fromIndex = sqlUpper.indexOf("LEVEL", fromIndex);
+            if (fromIndex == -1) {
+                break;
+            }
+            levelStartIndexs.add(fromIndex);
+            fromIndex += 5;
+        }
+        if (levelStartIndexs.isEmpty()) {
+            return sql;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        int len = sqlUpper.length();
+        stringBuilder.append(sqlUpper.substring(0, levelStartIndexs.get(0)));
+        for (int i = 0; i < levelStartIndexs.size(); ++i) {
+            int levelStartIndex = levelStartIndexs.get(i);
+            boolean isPureKeyWord = false;
+            if (levelStartIndex - 1 >= 0 && levelStartIndex + 5 < len) {
+                // " LEVEL "
+                if (sqlUpper.charAt(levelStartIndex - 1) == ' ' && sqlUpper.charAt(levelStartIndex + 5) == ' ') {
+                    stringBuilder.append("\"LEVEL\"");
+                    isPureKeyWord = true;
+                } else if (sqlUpper.charAt(levelStartIndex - 1) == ' ' && sqlUpper.charAt(levelStartIndex + 5) == ',') {
+                    stringBuilder.append("\"LEVEL\"");
+                    isPureKeyWord = true;
+                } else if (sqlUpper.charAt(levelStartIndex - 1) == ',' && sqlUpper.charAt(levelStartIndex + 5) == ',') {
+                    stringBuilder.append("\"LEVEL\"");
+                    isPureKeyWord = true;
+                } else if (sqlUpper.charAt(levelStartIndex - 1) == ',' && sqlUpper.charAt(levelStartIndex + 5) == ' ') {
+                    stringBuilder.append("\"LEVEL\"");
+                    isPureKeyWord = true;
+                }
+            }
+
+            if (i + 1 < levelStartIndexs.size()) {
+                if (isPureKeyWord) {
+                    stringBuilder.append(sqlUpper.substring(levelStartIndex + 5, levelStartIndexs.get(i + 1)));
+                } else {
+                    stringBuilder.append(sqlUpper.substring(levelStartIndex, levelStartIndexs.get(i + 1)));
+                }
+            } else {
+                if (isPureKeyWord) {
+                    stringBuilder.append(sqlUpper.substring(levelStartIndex + 5));
+                } else {
+                    stringBuilder.append(sqlUpper.substring(levelStartIndex));
+                }
+            }
+        }
+        return stringBuilder.toString();
     }
 }
