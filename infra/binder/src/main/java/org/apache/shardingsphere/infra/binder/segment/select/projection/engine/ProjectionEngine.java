@@ -123,6 +123,16 @@ public final class ProjectionEngine {
         Collection<Projection> projections = new LinkedHashSet<>();
         projections.addAll(getShorthandColumnsFromSimpleTableSegment(table, owner));
         projections.addAll(getShorthandColumnsFromSubqueryTableSegment(table));
+        // 对于类似select * from(select TMP.* from (select * from table) TMP), 避免将*重写为TMP.*, TMP的范围不能出括号, 将owner设置为null
+        if (projectionSegment.getStartIndex() == projectionSegment.getStopIndex()) {
+            Collection<Projection> specialProjections = new LinkedHashSet<>();
+            for (Projection projection : projections) {
+                if (projection instanceof ColumnProjection) {
+                    specialProjections.add(projection.cloneWithOwner(null));
+                }
+            }
+            projections = specialProjections;
+        }
         projections.addAll(getShorthandColumnsFromJoinTableSegment(table, owner, projectionSegment));
         return new ShorthandProjection(owner, projections);
     }
