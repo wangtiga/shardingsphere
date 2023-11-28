@@ -22,6 +22,11 @@ dataSources:
 rules:
 - !ENCRYPT
   tables:
+    t_person:
+      columns:
+        name:
+          cipherColumn: name
+          encryptorName: rewrite_normal_fixture
     t_account:
       columns:
         certificate_number:
@@ -97,6 +102,7 @@ rules:
           plainColumn: plain_amount
           encryptorName: rewrite_normal_fixture
       queryWithCipherColumn: false
+
   encryptors:
     rewrite_normal_fixture:
       type: REWRITE.NORMAL.FIXTURE

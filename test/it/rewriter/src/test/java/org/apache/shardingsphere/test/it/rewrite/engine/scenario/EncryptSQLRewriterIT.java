@@ -64,10 +64,12 @@ public final class EncryptSQLRewriterIT extends SQLRewriterIT {
     @Override
     protected Map<String, ShardingSphereSchema> mockSchemas(final String schemaName) {
         ShardingSphereSchema result = mock(ShardingSphereSchema.class);
+        when(result.getAllColumnNames("t_person")).thenReturn(Arrays.asList("id", "name"));
         when(result.getAllColumnNames("t_account")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount", "status"));
         when(result.getAllColumnNames("t_account_bak")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount", "status"));
         when(result.getAllColumnNames("t_account_detail")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount", "status"));
         when(result.getAllColumnNames("t_order")).thenReturn(Arrays.asList("ORDER_ID", "USER_ID", "CONTENT"));
+        when(result.getVisibleColumnNames("t_person")).thenReturn(Arrays.asList("id", "name"));
         when(result.getVisibleColumnNames("t_account")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount"));
         when(result.getVisibleColumnNames("t_account_bak")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount"));
         when(result.getVisibleColumnNames("t_account_detail")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount"));
@@ -84,6 +86,7 @@ public final class EncryptSQLRewriterIT extends SQLRewriterIT {
             singleRule.get().put("encrypt_ds", schemaName, "t_account_bak");
             singleRule.get().put("encrypt_ds", schemaName, "t_account_detail");
             singleRule.get().put("encrypt_ds", schemaName, "t_order");
+            singleRule.get().put("encrypt_ds", schemaName, "t_person");
         }
     }
     

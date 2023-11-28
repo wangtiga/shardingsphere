@@ -35,6 +35,7 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.Previou
 import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.SchemaMetaDataAware;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.SubstitutableColumnNameToken;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.SubqueryType;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ColumnProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionSegment;
@@ -121,7 +122,17 @@ public final class EncryptProjectionTokenGenerator implements CollectionSQLToken
         }
         int startIndex = segment.getOwner().isPresent() ? segment.getOwner().get().getStartIndex() : segment.getStartIndex();
         previousSQLTokens.removeIf(each -> each.getStartIndex() == startIndex);
-        return new SubstitutableColumnNameToken(startIndex, segment.getStopIndex(), projections, databaseType.getQuoteCharacter());
+        /**
+         *  修复oracle数据库sql重写后为别名加双引号
+         *  select alias.* from tablename alias
+         *  错误: select "alias"."column1", "alias"."column2" from tablename alias
+         *  正确: select alias.column1, alias.column2 from tablename alias
+          */
+        QuoteCharacter quoteCharacter = QuoteCharacter.NONE;
+        if (segment.getOwner().isPresent()) {
+            quoteCharacter = segment.getOwner().get().getIdentifier().getQuoteCharacter();
+        }
+        return new SubstitutableColumnNameToken(startIndex, segment.getStopIndex(), projections, quoteCharacter);
     }
     
     private ColumnProjection buildColumnProjection(final ColumnProjectionSegment segment) {
