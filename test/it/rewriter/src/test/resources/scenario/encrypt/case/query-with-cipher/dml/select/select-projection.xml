@@ -82,6 +82,7 @@
         <output sql="SELECT t_account.account_id FROM t_account WHERE account_id = 100" />
     </rewrite-assertion>
 
+    <!-- 错误的重写 SELECT "p"."id", "p"."name" AS name FROM t_person p, 在oracle和dm中无法执行-->
     <rewrite-assertion id="select_with_quotecharacter" db-types="Oracle,SQL92,MySQL,PostgreSQL,openGauss,SQLServer">
         <input sql="SELECT p.* FROM t_person p" />
         <output sql="SELECT p.id, p.name AS name FROM t_person p" />
