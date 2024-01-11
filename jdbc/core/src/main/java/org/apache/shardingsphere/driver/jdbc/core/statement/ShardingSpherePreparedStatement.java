@@ -65,6 +65,7 @@ import org.apache.shardingsphere.infra.executor.sql.execute.result.ExecuteResult
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.driver.jdbc.type.stream.JDBCStreamQueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.update.UpdateResult;
+import org.apache.shardingsphere.infra.executor.sql.log.SQLLogger;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.DriverExecutionPrepareEngine;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.JDBCDriverType;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.StatementOption;
@@ -104,13 +105,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -197,6 +194,8 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
         this.connection = connection;
         metaDataContexts = connection.getContextManager().getMetaDataContexts();
         SQLParserRule sqlParserRule = metaDataContexts.getMetaData().getGlobalRuleMetaData().getSingleRule(SQLParserRule.class);
+        // 创建ShardingSpherePreparedStatement对象时更新标识符
+        SQLLogger.uniqueIdentifier.set(newUniqueIdentifier());
         this.sql = sqlParserRule.isSqlCommentParseEnabled() ? sql : SQLHintUtils.removeHint(sql);
         statements = new ArrayList<>();
         parameterSets = new ArrayList<>();
@@ -214,6 +213,21 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
         trafficRule = metaDataContexts.getMetaData().getGlobalRuleMetaData().getSingleRule(TrafficRule.class);
         transparentStatement = isTransparentStatement(metaDataContexts.getMetaData().getDatabase(connection.getDatabaseName()).getRuleMetaData());
         statementManager = new StatementManager();
+    }
+    
+    private static String newUniqueIdentifier() {
+        LocalDateTime time = LocalDateTime.now();
+        StringBuilder sb = new StringBuilder();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String timestamp = time.format(formatter);
+        for (char c : timestamp.toCharArray()) {
+            if (c != '-' && c != ' ' && c != ':') {
+                sb.append(c);
+            }
+        }
+        UUID uuid = UUID.randomUUID();
+        sb.append(uuid.toString());
+        return sb.toString();
     }
     
     private boolean isStatementsCacheable(final ShardingSphereRuleMetaData databaseRuleMetaData) {

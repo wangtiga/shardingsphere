@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.infra.executor.sql.log;
 
+
+import com.csplog.CspLogCenter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ import org.apache.shardingsphere.infra.executor.sql.context.ExecutionUnit;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * SQL logger.
@@ -34,6 +37,8 @@ import java.util.Set;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j(topic = "ShardingSphere-SQL")
 public final class SQLLogger {
+    
+    public static AtomicReference<String> uniqueIdentifier = new AtomicReference<>();
     
     /**
      * Log SQL.
@@ -43,7 +48,10 @@ public final class SQLLogger {
      * @param executionContext Execution context
      */
     public static void logSQL(final QueryContext queryContext, final boolean showSimple, final ExecutionContext executionContext) {
-        log("Logic SQL: {}", queryContext.getSql());
+         CspLogCenter.pushLog(uniqueIdentifier.get(), "业务系统执行的SQL: " + queryContext.getSql());
+        // Logic SQL
+        log("{}[ 业务系统执行的SQL: {} ]{}", uniqueIdentifier.get(), queryContext.getSql(), uniqueIdentifier.get());
+        
         if (showSimple) {
             logSimpleMode(executionContext.getExecutionUnits());
         } else {
@@ -62,13 +70,16 @@ public final class SQLLogger {
     private static void logNormalMode(final Collection<ExecutionUnit> executionUnits) {
         for (ExecutionUnit each : executionUnits) {
             if (each.getSqlUnit().getParameters().isEmpty()) {
-                log("Actual SQL: {} ::: {}", each.getDataSourceName(), each.getSqlUnit().getSql());
+                 CspLogCenter.pushLog(uniqueIdentifier.get(), "jdbc插件改写后的SQL: " + each.getDataSourceName() + " ::: " + each.getSqlUnit().getSql());
+                // Actual SQL
+                log("{}[ jdbc插件改写后的SQL: {} ::: {} ]{}", uniqueIdentifier.get(), each.getDataSourceName(), each.getSqlUnit().getSql(), uniqueIdentifier.get());
             } else {
-                log("Actual SQL: {} ::: {} ::: {}", each.getDataSourceName(), each.getSqlUnit().getSql(), each.getSqlUnit().getParameters());
+                 CspLogCenter.pushLog(uniqueIdentifier.get(), "jdbc插件改写后的SQL: " + each.getDataSourceName() + " ::: " + each.getSqlUnit().getSql() + " ::: " + each.getSqlUnit().getParameters());
+                log("{}[ jdbc插件改写后的SQL: {} ::: {} ::: {} ]{}", uniqueIdentifier.get(), each.getDataSourceName(), each.getSqlUnit().getSql(), each.getSqlUnit().getParameters(), uniqueIdentifier.get());
             }
         }
     }
-    
+
     private static void log(final String pattern, final Object... args) {
         log.info(pattern, args);
     }
