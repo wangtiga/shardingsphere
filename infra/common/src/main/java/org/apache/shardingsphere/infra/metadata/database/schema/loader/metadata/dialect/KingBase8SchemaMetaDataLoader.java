@@ -39,13 +39,13 @@ import java.util.stream.Collectors;
  */
 public final class KingBase8SchemaMetaDataLoader implements DialectSchemaMetaDataLoader {
     
-    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN %s FROM ALL_TAB_COLS WHERE OWNER = ?";
+    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN %s FROM ALL_TAB_COLS ";
     
     private static final String ORDER_BY_COLUMN_ID = " ORDER BY COLUMN_ID";
     
     private static final String TABLE_META_DATA_SQL = TABLE_META_DATA_SQL_NO_ORDER + ORDER_BY_COLUMN_ID;
     
-    private static final String TABLE_META_DATA_SQL_IN_TABLES = TABLE_META_DATA_SQL_NO_ORDER + " AND TABLE_NAME IN (%s)" + ORDER_BY_COLUMN_ID;
+    private static final String TABLE_META_DATA_SQL_IN_TABLES = TABLE_META_DATA_SQL_NO_ORDER + " WHERE TABLE_NAME IN (%s)" + ORDER_BY_COLUMN_ID;
     
     private static final String INDEX_META_DATA_SQL = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, INDEX_NAME FROM ALL_INDEXES WHERE OWNER = ? AND TABLE_NAME IN (%s)";
     
@@ -86,7 +86,7 @@ public final class KingBase8SchemaMetaDataLoader implements DialectSchemaMetaDat
         try (PreparedStatement preparedStatement = connection.prepareStatement(sqlGetMetaData)) {
             Map<String, Integer> dataTypes = new DataTypeLoader().load(connection.getMetaData(), TypedSPILoader.getService(DatabaseType.class, getType()));
             Map<String, Collection<String>> tablePrimaryKeys = loadTablePrimaryKeys(connection, tables);
-            preparedStatement.setString(1, connection.getSchema());
+            // preparedStatement.setString(1, connection.getSchema());
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
                     String tableName = resultSet.getString("TABLE_NAME");
@@ -106,7 +106,8 @@ public final class KingBase8SchemaMetaDataLoader implements DialectSchemaMetaDat
         String columnName = resultSet.getString("COLUMN_NAME");
         String dataType = getOriginalDataType(resultSet.getString("DATA_TYPE"));
         boolean primaryKey = primaryKeys.contains(columnName);
-        boolean generated = versionContainsIdentityColumn(databaseMetaData) && "YES".equals(resultSet.getString("IDENTITY_COLUMN"));
+        // boolean generated = versionContainsIdentityColumn(databaseMetaData) && "YES".equals(resultSet.getString("IDENTITY_COLUMN"));
+        boolean generated = false;
         // TODO need to support caseSensitive when version < 12.2.
         boolean containsCollation = versionContainsCollation(databaseMetaData);
         String collation = null;
@@ -135,15 +136,16 @@ public final class KingBase8SchemaMetaDataLoader implements DialectSchemaMetaDat
     
     private String getTableMetaDataSQL(final Collection<String> tables, final DatabaseMetaData databaseMetaData) throws SQLException {
         StringBuilder stringBuilder = new StringBuilder(28);
-        if (versionContainsIdentityColumn(databaseMetaData)) {
-            stringBuilder.append(", IDENTITY_COLUMN");
-        }
+        // if (versionContainsIdentityColumn(databaseMetaData)) {
+        // stringBuilder.append(", IDENTITY_COLUMN");
+        // }
         if (versionContainsCollation(databaseMetaData)) {
             stringBuilder.append(", COLLATION");
         }
         String collation = stringBuilder.toString();
-        return tables.isEmpty() ? String.format(TABLE_META_DATA_SQL, collation)
-                : String.format(TABLE_META_DATA_SQL_IN_TABLES, collation, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
+        return String.format(TABLE_META_DATA_SQL, collation);
+        // return tables.isEmpty() ? String.format(TABLE_META_DATA_SQL, collation)
+        // : String.format(TABLE_META_DATA_SQL_IN_TABLES, collation, tables.stream().map(each -> String.format("'%s'", each.toUpperCase())).collect(Collectors.joining(",")));
     }
     
     private boolean versionContainsCollation(final DatabaseMetaData databaseMetaData) throws SQLException {

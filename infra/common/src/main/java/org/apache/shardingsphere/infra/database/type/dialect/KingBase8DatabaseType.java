@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.infra.database.type.dialect;
 
-import org.apache.shardingsphere.infra.database.metadata.dialect.DMDataSourceMetaData;
 import org.apache.shardingsphere.infra.database.metadata.dialect.KingBase8DataSourceMetaData;
 import org.apache.shardingsphere.infra.database.type.BranchDatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
