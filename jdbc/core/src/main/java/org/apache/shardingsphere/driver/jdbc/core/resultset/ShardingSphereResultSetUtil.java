@@ -60,7 +60,11 @@ public final class ShardingSphereResultSetUtil {
         Map<String, Integer> result = new CaseInsensitiveMap<>(actualProjections.size(), 1);
         for (int columnIndex = actualProjections.size(); columnIndex > 0; columnIndex--) {
             Projection projection = actualProjections.get(columnIndex - 1);
+            // 对于kingbase数据库中进行特殊处理, select count(*) from 表名, 查询出来的列名是 count, 需要使用count进行匹配, 而不是count(*)
             result.put(DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) ? projection.getExpression() : projection.getColumnLabel(), columnIndex);
+            if (!DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) && projection.getExpression().toLowerCase().contains("count(")) {
+                result.put("count", columnIndex);
+            }
         }
         return result;
     }
