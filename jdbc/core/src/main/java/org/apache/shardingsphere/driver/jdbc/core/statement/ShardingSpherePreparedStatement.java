@@ -188,12 +188,13 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
         this(connection, sql, resultSetType, resultSetConcurrency, resultSetHoldability, false, null);
     }
     
-    private ShardingSpherePreparedStatement(final ShardingSphereConnection connection, final String sql,
+    private ShardingSpherePreparedStatement(final ShardingSphereConnection connection, String sql,
                                             final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability, final boolean returnGeneratedKeys,
                                             final String[] columns) throws SQLException {
         if (Strings.isNullOrEmpty(sql)) {
             throw new EmptySQLException().toSQLException();
         }
+        sql = sql.toUpperCase();
         this.connection = connection;
         metaDataContexts = connection.getContextManager().getMetaDataContexts();
         SQLParserRule sqlParserRule = metaDataContexts.getMetaData().getGlobalRuleMetaData().getSingleRule(SQLParserRule.class);
