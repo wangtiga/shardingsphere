@@ -194,7 +194,6 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
         if (Strings.isNullOrEmpty(sql)) {
             throw new EmptySQLException().toSQLException();
         }
-        sql = sql.toUpperCase();
         this.connection = connection;
         metaDataContexts = connection.getContextManager().getMetaDataContexts();
         SQLParserRule sqlParserRule = metaDataContexts.getMetaData().getGlobalRuleMetaData().getSingleRule(SQLParserRule.class);

@@ -54,7 +54,6 @@ public final class SQLParserExecutor {
     }
     
     private ParseASTNode twoPhaseParse(String sql) {
-        sql = sql.toUpperCase();
         DatabaseTypedSQLParserFacade sqlParserFacade = TypedSPILoader.getService(DatabaseTypedSQLParserFacade.class, databaseType);
         SQLParser sqlParser = SQLParserFactory.newInstance(sql, sqlParserFacade.getLexerClass(), sqlParserFacade.getParserClass());
         try {
