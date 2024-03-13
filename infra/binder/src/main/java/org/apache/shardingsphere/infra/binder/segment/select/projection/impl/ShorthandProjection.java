@@ -81,6 +81,9 @@ public final class ShorthandProjection implements Projection {
         for (Entry<String, Projection> entry : actualColumns.entrySet()) {
             if (entry.getValue() instanceof ColumnProjection) {
                 result.add((ColumnProjection) entry.getValue());
+            } else if (entry.getValue() instanceof ExpressionProjection) {
+                ExpressionProjection projection = (ExpressionProjection) entry.getValue();
+                result.add(new ColumnProjection("", projection.getAlias().get(), null));
             }
         }
         return result;
