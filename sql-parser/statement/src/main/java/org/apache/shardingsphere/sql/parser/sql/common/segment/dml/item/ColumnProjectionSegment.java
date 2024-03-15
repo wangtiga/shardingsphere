@@ -42,7 +42,8 @@ public final class ColumnProjectionSegment implements ProjectionSegment, AliasAv
     
     @Override
     public Optional<String> getAlias() {
-        return null == alias ? Optional.empty() : Optional.ofNullable(alias.getIdentifier().getValueWithQuoteCharacters());
+        // return null == alias ? Optional.empty() : Optional.ofNullable(alias.getIdentifier().getValueWithQuoteCharacters());
+        return null == alias ? Optional.empty() : Optional.ofNullable(alias.getIdentifier().getValue());
     }
     
     @Override
