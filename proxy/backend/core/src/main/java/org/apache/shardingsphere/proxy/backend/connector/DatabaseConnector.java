@@ -82,11 +82,11 @@ import org.apache.shardingsphere.sqlfederation.rule.SQLFederationRule;
 import org.apache.shardingsphere.sqlfederation.spi.SQLFederationExecutor;
 import org.apache.shardingsphere.sqlfederation.spi.SQLFederationExecutorContext;
 import org.apache.shardingsphere.transaction.api.TransactionType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import javax.sql.DataSource;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -122,6 +122,7 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
     private List<QueryHeader> queryHeaders;
     
     private MergedResult mergedResult;
+    private Logger logger = LoggerFactory.getLogger(DatabaseConnector.class);
     
     public DatabaseConnector(final String driverType, final ShardingSphereDatabase database, final QueryContext queryContext, final BackendConnection backendConnection) {
         SQLStatementContext<?> sqlStatementContext = queryContext.getSqlStatementContext();
@@ -277,6 +278,22 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
     }
     
     private ResultSet doExecuteFederation(final QueryContext queryContext, final MetaDataContexts metaDataContexts) throws SQLException {
+        // 透传查询information_schema数据库的sql
+        String sql = queryContext.getSql();
+        if (sql.toLowerCase().contains("information_schema")) {
+            Map<String, ShardingSphereDatabase> databases = metaDataContexts.getMetaData().getDatabases();
+            for (Map.Entry<String, ShardingSphereDatabase> stringShardingSphereDatabaseEntry : databases.entrySet()) {
+                ShardingSphereDatabase shardingSphereDatabase = stringShardingSphereDatabaseEntry.getValue();
+                for (Map.Entry<String, DataSource> entry : shardingSphereDatabase.getResourceMetaData().getDataSources().entrySet()) {
+                    String dsName = entry.getKey();
+                    Connection originCon = ((DataSource) entry.getValue()).getConnection();
+                    this.logger.error("dsName:{}, originCon:{}", dsName, originCon);
+                    PreparedStatement psOrigin = originCon.prepareStatement(sql);
+                    return psOrigin.executeQuery(sql);
+                }
+            }
+        }
+        
         boolean isReturnGeneratedKeys = queryContext.getSqlStatementContext().getSqlStatement() instanceof MySQLInsertStatement;
         ShardingSphereDatabase database = metaDataContexts.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName());
         DatabaseType protocolType = database.getProtocolType();
