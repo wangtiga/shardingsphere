@@ -142,11 +142,13 @@ public final class ProxyBackendHandlerFactory {
         if (sqlStatement instanceof TCLStatement) {
             return TransactionBackendHandlerFactory.newInstance((SQLStatementContext<TCLStatement>) sqlStatementContext, sql, connectionSession);
         }
-        // Optional<ProxyBackendHandler> backendHandler = DatabaseAdminBackendHandlerFactory.newInstance(databaseType, sqlStatementContext, connectionSession, sql);
-        // if (backendHandler.isPresent()) {
-        // return backendHandler.get();
-        // }
         Optional<ProxyBackendHandler> backendHandler = Optional.empty();
+        if (!sql.toLowerCase().contains("information_schema.schemata")) {
+            backendHandler = DatabaseAdminBackendHandlerFactory.newInstance(databaseType, sqlStatementContext, connectionSession, sql);
+            if (backendHandler.isPresent()) {
+                return backendHandler.get();
+            }
+        }
         Optional<ExtraProxyBackendHandler> extraHandler = findExtraProxyBackendHandler(sqlStatement);
         if (extraHandler.isPresent()) {
             return extraHandler.get();
