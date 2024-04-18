@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  */
 public final class Kingbase8SchemaMetaDataLoader implements DialectSchemaMetaDataLoader {
     
-    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN %s FROM ALL_TAB_COLS WHERE OWNER = ?";
+    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN FROM ALL_TAB_COLS WHERE OWNER = ?";
     
     private static final String ORDER_BY_COLUMN_ID = " ORDER BY COLUMN_ID";
     
@@ -138,16 +138,14 @@ public final class Kingbase8SchemaMetaDataLoader implements DialectSchemaMetaDat
     }
     
     private String getTableMetaDataSQL(final Collection<String> tables, final DatabaseMetaData databaseMetaData) throws SQLException {
-        StringBuilder stringBuilder = new StringBuilder(28);
         // if (versionContainsIdentityColumn(databaseMetaData)) {
         // stringBuilder.append(", IDENTITY_COLUMN");
         // }
         // if (versionContainsCollation(databaseMetaData)) {
         // stringBuilder.append(", COLLATION");
         // }
-        String collation = stringBuilder.toString();
-        return tables.isEmpty() ? String.format(TABLE_META_DATA_SQL, collation)
-                : String.format(TABLE_META_DATA_SQL_IN_TABLES, collation, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
+        return tables.isEmpty() ? TABLE_META_DATA_SQL
+                : String.format(TABLE_META_DATA_SQL_IN_TABLES, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
     }
     
     private boolean versionContainsCollation(final DatabaseMetaData databaseMetaData) throws SQLException {
