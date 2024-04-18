@@ -61,8 +61,24 @@ public final class ShardingSphereResultSetUtil {
         for (int columnIndex = actualProjections.size(); columnIndex > 0; columnIndex--) {
             Projection projection = actualProjections.get(columnIndex - 1);
             result.put(DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) ? projection.getExpression() : projection.getColumnLabel(), columnIndex);
+            // kingbase8 使用count进行匹配count(*)、count(0)、count(字段)
+            if (!DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) && getStrWithoutSpace(projection.getColumnLabel()).toLowerCase().contains("count(")) {
+                result.put("count", columnIndex);
+            }
         }
         return result;
+    }
+    
+    // 过滤空格
+    private static String getStrWithoutSpace(String str) {
+        StringBuilder sp = new StringBuilder();
+        for (char c : str.toCharArray()) {
+            if (c == ' ') {
+                continue;
+            }
+            sp.append(c);
+        }
+        return sp.toString();
     }
     
     private static boolean hasSelectExpandProjections(final SQLStatementContext<?> sqlStatementContext) {
