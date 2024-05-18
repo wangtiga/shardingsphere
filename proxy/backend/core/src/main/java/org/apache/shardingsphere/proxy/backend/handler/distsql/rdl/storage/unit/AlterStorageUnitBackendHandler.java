@@ -27,9 +27,9 @@ import org.apache.shardingsphere.distsql.parser.segment.HostnameAndPortBasedData
 import org.apache.shardingsphere.distsql.parser.segment.URLBasedDataSourceSegment;
 import org.apache.shardingsphere.distsql.parser.segment.converter.DataSourceSegmentsConverter;
 import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.AlterStorageUnitStatement;
-import org.apache.shardingsphere.infra.database.metadata.url.JdbcUrl;
-import org.apache.shardingsphere.infra.database.metadata.url.StandardJdbcUrlParser;
+import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.datasource.props.DataSourceProperties;
 import org.apache.shardingsphere.infra.datasource.props.DataSourcePropertiesCreator;
 import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
@@ -123,14 +123,27 @@ public final class AlterStorageUnitBackendHandler extends StorageUnitDefinitionB
             database = ((HostnameAndPortBasedDataSourceSegment) segment).getDatabase();
         }
         if (segment instanceof URLBasedDataSourceSegment) {
-            JdbcUrl segmentJdbcUrl = new StandardJdbcUrlParser().parse(((URLBasedDataSourceSegment) segment).getUrl());
-            hostName = segmentJdbcUrl.getHostname();
-            port = String.valueOf(segmentJdbcUrl.getPort());
-            database = segmentJdbcUrl.getDatabase();
+            String jdbcUrl = ((URLBasedDataSourceSegment) segment).getUrl();
+            
+            DataSourceMetaData metaData = DatabaseTypeEngine.getDatabaseType(jdbcUrl).getDataSourceMetaData(jdbcUrl, null);
+            hostName = metaData.getHostname();
+            port = String.valueOf(metaData.getPort());
+            database = metaData.getSchema();
+            if (database == null || database.isEmpty()) {
+                database = metaData.getCatalog();
+            }
         }
-        String url = String.valueOf(DataSourcePropertiesCreator.create(dataSource).getConnectionPropertySynonyms().getStandardProperties().get("url"));
-        JdbcUrl dataSourceJdbcUrl = new StandardJdbcUrlParser().parse(url);
-        return Objects.equals(hostName, dataSourceJdbcUrl.getHostname()) && Objects.equals(port, String.valueOf(dataSourceJdbcUrl.getPort()))
-                && Objects.equals(database, dataSourceJdbcUrl.getDatabase());
+        String jdbcUrlDatasource = String.valueOf(DataSourcePropertiesCreator.create(dataSource).getConnectionPropertySynonyms().getStandardProperties().get("url"));
+        DataSourceMetaData metaDataDatasource = DatabaseTypeEngine.getDatabaseType(jdbcUrlDatasource).getDataSourceMetaData(jdbcUrlDatasource, null);
+        String hostNameDatasource = metaDataDatasource.getHostname();
+        String portDatasource = String.valueOf(metaDataDatasource.getPort());
+        String databaseDatasource = metaDataDatasource.getSchema();
+        if (databaseDatasource == null || databaseDatasource.isEmpty()) {
+            databaseDatasource = metaDataDatasource.getCatalog();
+        }
+        
+        return Objects.equals(hostName, hostNameDatasource)
+                && Objects.equals(port, portDatasource)
+                && Objects.equals(database, databaseDatasource);
     }
 }
