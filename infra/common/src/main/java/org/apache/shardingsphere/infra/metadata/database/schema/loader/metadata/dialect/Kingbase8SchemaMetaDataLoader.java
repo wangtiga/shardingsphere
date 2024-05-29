@@ -29,27 +29,17 @@ import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.Tab
 import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
- * Schema meta data loader for Oracle.
+ * Schema meta data loader for kingbase8
  */
-public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLoader {
+public final class Kingbase8SchemaMetaDataLoader implements DialectSchemaMetaDataLoader {
     
-    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN %s FROM ALL_TAB_COLS WHERE OWNER = ?";
+    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN FROM ALL_TAB_COLS WHERE OWNER = ?";
     
     private static final String ORDER_BY_COLUMN_ID = " ORDER BY COLUMN_ID";
     
@@ -76,7 +66,7 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
     public Collection<SchemaMetaData> load(final DataSource dataSource, final Collection<String> tables, final String defaultSchemaName) throws SQLException {
         Map<String, Collection<ColumnMetaData>> columnMetaDataMap = new HashMap<>(tables.size(), 1);
         Map<String, Collection<IndexMetaData>> indexMetaDataMap = new HashMap<>(tables.size(), 1);
-        try (Connection connection = new MetaDataLoaderConnectionAdapter(TypedSPILoader.getService(DatabaseType.class, "Oracle"), dataSource.getConnection())) {
+        try (Connection connection = new MetaDataLoaderConnectionAdapter(TypedSPILoader.getService(DatabaseType.class, "kingbase8"), dataSource.getConnection())) {
             for (List<String> each : Lists.partition(new ArrayList<>(tables), MAX_EXPRESSION_SIZE)) {
                 columnMetaDataMap.putAll(loadColumnMetaDataMap(connection, each));
                 indexMetaDataMap.putAll(loadIndexMetaData(connection, each));
@@ -86,7 +76,6 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
         for (Entry<String, Collection<ColumnMetaData>> entry : columnMetaDataMap.entrySet()) {
             tableMetaDataList.add(new TableMetaData(entry.getKey(), entry.getValue(), indexMetaDataMap.getOrDefault(entry.getKey(), Collections.emptyList()), Collections.emptyList()));
         }
-        // TODO Load views from Oracle database.
         return Collections.singletonList(new SchemaMetaData(defaultSchemaName, tableMetaDataList));
     }
     
@@ -116,22 +105,26 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
         String columnName = resultSet.getString("COLUMN_NAME");
         String dataType = getOriginalDataType(resultSet.getString("DATA_TYPE"));
         boolean primaryKey = primaryKeys.contains(columnName);
-        boolean generated = versionContainsIdentityColumn(databaseMetaData) && "YES".equals(resultSet.getString("IDENTITY_COLUMN"));
-        // TODO need to support caseSensitive when version < 12.2.
-        boolean containsCollation = versionContainsCollation(databaseMetaData);
+        // boolean generated = versionContainsIdentityColumn(databaseMetaData) && "YES".equals(resultSet.getString("IDENTITY_COLUMN"));
+        // ALL_TAB_COLS表中不存在IDENTITY_COLUMN
+        boolean generated = false;
+        // boolean containsCollation = versionContainsCollation(databaseMetaData);
+        // ALL_TAB_COLS表中不存在COLLATION
+        boolean containsCollation = false;
         String collation = null;
         if (containsCollation) {
             collation = resultSet.getString("COLLATION");
         }
-        boolean caseSensitive = null != collation && collation.endsWith("_CS");
+        // boolean caseSensitive = null != collation && collation.endsWith("_CS");
+        // 默认kingbase数据库大小写不敏感
+        boolean caseSensitive = false;
         boolean isVisible = "NO".equals(resultSet.getString("HIDDEN_COLUMN"));
-        int iDataType = java.sql.Types.VARCHAR;
+        int iDataType = Types.VARCHAR;
         Integer value = dataTypeMap.get(dataType);
         if (value != null) {
             iDataType = value.intValue();
         } else {
-            // case NullPointerException when use ojdbc6-11.2.0.1.0.jar connect oracle 11g, the databaseMetaData.getTypeInfo() return without "NVARCHAR2" -> {Integer@6259} -9
-            iDataType = java.sql.Types.VARCHAR;
+            iDataType = Types.VARCHAR;
         }
         return new ColumnMetaData(columnName, iDataType, primaryKey, generated, caseSensitive, isVisible, false);
     }
@@ -145,16 +138,14 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
     }
     
     private String getTableMetaDataSQL(final Collection<String> tables, final DatabaseMetaData databaseMetaData) throws SQLException {
-        StringBuilder stringBuilder = new StringBuilder(28);
-        if (versionContainsIdentityColumn(databaseMetaData)) {
-            stringBuilder.append(", IDENTITY_COLUMN");
-        }
-        if (versionContainsCollation(databaseMetaData)) {
-            stringBuilder.append(", COLLATION");
-        }
-        String collation = stringBuilder.toString();
-        return tables.isEmpty() ? String.format(TABLE_META_DATA_SQL, collation)
-                : String.format(TABLE_META_DATA_SQL_IN_TABLES, collation, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
+        // if (versionContainsIdentityColumn(databaseMetaData)) {
+        // stringBuilder.append(", IDENTITY_COLUMN");
+        // }
+        // if (versionContainsCollation(databaseMetaData)) {
+        // stringBuilder.append(", COLLATION");
+        // }
+        return tables.isEmpty() ? TABLE_META_DATA_SQL
+                : String.format(TABLE_META_DATA_SQL_IN_TABLES, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
     }
     
     private boolean versionContainsCollation(final DatabaseMetaData databaseMetaData) throws SQLException {
@@ -209,6 +200,6 @@ public final class OracleSchemaMetaDataLoader implements DialectSchemaMetaDataLo
     
     @Override
     public String getType() {
-        return "Oracle";
+        return "kingbase8";
     }
 }
