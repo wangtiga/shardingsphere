@@ -38,30 +38,30 @@ import java.util.stream.Collectors;
  * Schema meta data loader for dm
  */
 public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader {
-
+    
     private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID, HIDDEN_COLUMN %s FROM ALL_TAB_COLS WHERE OWNER = ?";
-
+    
     private static final String ORDER_BY_COLUMN_ID = " ORDER BY COLUMN_ID";
-
+    
     private static final String TABLE_META_DATA_SQL = TABLE_META_DATA_SQL_NO_ORDER + ORDER_BY_COLUMN_ID;
-
+    
     private static final String TABLE_META_DATA_SQL_IN_TABLES = TABLE_META_DATA_SQL_NO_ORDER + " AND TABLE_NAME IN (%s)" + ORDER_BY_COLUMN_ID;
-
+    
     private static final String INDEX_META_DATA_SQL = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, INDEX_NAME FROM ALL_INDEXES WHERE OWNER = ? AND TABLE_NAME IN (%s)";
-
+    
     private static final String PRIMARY_KEY_META_DATA_SQL = "SELECT A.OWNER AS TABLE_SCHEMA, A.TABLE_NAME AS TABLE_NAME, B.COLUMN_NAME AS COLUMN_NAME FROM ALL_CONSTRAINTS A INNER JOIN"
             + " ALL_CONS_COLUMNS B ON A.CONSTRAINT_NAME = B.CONSTRAINT_NAME WHERE CONSTRAINT_TYPE = 'P' AND A.OWNER = ?";
-
+    
     private static final String PRIMARY_KEY_META_DATA_SQL_IN_TABLES = PRIMARY_KEY_META_DATA_SQL + " AND A.TABLE_NAME IN (%s)";
-
+    
     private static final int COLLATION_START_MAJOR_VERSION = 12;
-
+    
     private static final int COLLATION_START_MINOR_VERSION = 2;
-
+    
     private static final int IDENTITY_COLUMN_START_MINOR_VERSION = 1;
-
+    
     private static final int MAX_EXPRESSION_SIZE = 1000;
-
+    
     @Override
     public Collection<SchemaMetaData> load(final DataSource dataSource, final Collection<String> tables, final String defaultSchemaName) throws SQLException {
         Map<String, Collection<ColumnMetaData>> columnMetaDataMap = new HashMap<>(tables.size(), 1);
@@ -79,7 +79,7 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         // TODO Load views from dm database.
         return Collections.singletonList(new SchemaMetaData(defaultSchemaName, tableMetaDataList));
     }
-
+    
     private Map<String, Collection<ColumnMetaData>> loadColumnMetaDataMap(final Connection connection, final Collection<String> tables) throws SQLException {
         Map<String, Collection<ColumnMetaData>> result = new HashMap<>(tables.size(), 1);
         String sqlGetMetaData = getTableMetaDataSQL(tables, connection.getMetaData());
@@ -100,7 +100,7 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         }
         return result;
     }
-
+    
     private ColumnMetaData loadColumnMetaData(final Map<String, Integer> dataTypeMap, final ResultSet resultSet, final Collection<String> primaryKeys,
                                               final DatabaseMetaData databaseMetaData) throws SQLException {
         String columnName = resultSet.getString("COLUMN_NAME");
@@ -124,7 +124,7 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         }
         return new ColumnMetaData(columnName, iDataType, primaryKey, generated, caseSensitive, isVisible, false);
     }
-
+    
     private String getOriginalDataType(final String dataType) {
         int index = dataType.indexOf("(");
         if (index > 0) {
@@ -132,7 +132,7 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         }
         return dataType;
     }
-
+    
     private String getTableMetaDataSQL(final Collection<String> tables, final DatabaseMetaData databaseMetaData) throws SQLException {
         StringBuilder stringBuilder = new StringBuilder(28);
         if (versionContainsIdentityColumn(databaseMetaData)) {
@@ -145,15 +145,15 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         return tables.isEmpty() ? String.format(TABLE_META_DATA_SQL, collation)
                 : String.format(TABLE_META_DATA_SQL_IN_TABLES, collation, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
     }
-
+    
     private boolean versionContainsCollation(final DatabaseMetaData databaseMetaData) throws SQLException {
         return databaseMetaData.getDatabaseMajorVersion() >= COLLATION_START_MAJOR_VERSION && databaseMetaData.getDatabaseMinorVersion() >= COLLATION_START_MINOR_VERSION;
     }
-
+    
     private boolean versionContainsIdentityColumn(final DatabaseMetaData databaseMetaData) throws SQLException {
         return databaseMetaData.getDatabaseMajorVersion() >= COLLATION_START_MAJOR_VERSION && databaseMetaData.getDatabaseMinorVersion() >= IDENTITY_COLUMN_START_MINOR_VERSION;
     }
-
+    
     private Map<String, Collection<IndexMetaData>> loadIndexMetaData(final Connection connection, final Collection<String> tableNames) throws SQLException {
         Map<String, Collection<IndexMetaData>> result = new HashMap<>(tableNames.size(), 1);
         try (PreparedStatement preparedStatement = connection.prepareStatement(getIndexMetaDataSQL(tableNames))) {
@@ -171,11 +171,11 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         }
         return result;
     }
-
+    
     private String getIndexMetaDataSQL(final Collection<String> tableNames) {
         return String.format(INDEX_META_DATA_SQL, tableNames.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
     }
-
+    
     private Map<String, Collection<String>> loadTablePrimaryKeys(final Connection connection, final Collection<String> tableNames) throws SQLException {
         Map<String, Collection<String>> result = new HashMap<>();
         try (PreparedStatement preparedStatement = connection.prepareStatement(getPrimaryKeyMetaDataSQL(tableNames))) {
@@ -190,12 +190,12 @@ public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader
         }
         return result;
     }
-
+    
     private String getPrimaryKeyMetaDataSQL(final Collection<String> tables) {
         return tables.isEmpty() ? PRIMARY_KEY_META_DATA_SQL
                 : String.format(PRIMARY_KEY_META_DATA_SQL_IN_TABLES, tables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
     }
-
+    
     @Override
     public String getType() {
         return "dm";
