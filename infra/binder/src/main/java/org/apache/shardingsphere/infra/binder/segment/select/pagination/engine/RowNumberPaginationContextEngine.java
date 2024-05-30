@@ -116,15 +116,27 @@ public final class RowNumberPaginationContextEngine {
             String operator = each.getOperator();
             switch (operator) {
                 case ">":
+                    if (each.getRight() instanceof BinaryOperationExpression) {
+                        return new PaginationContext(null, null, params);
+                    }
                     offset = createRowNumberValueSegment(each.getRight(), false);
                     break;
                 case ">=":
+                    if (each.getRight() instanceof BinaryOperationExpression) {
+                        return new PaginationContext(null, null, params);
+                    }
                     offset = createRowNumberValueSegment(each.getRight(), true);
                     break;
                 case "<":
+                    if (each.getRight() instanceof BinaryOperationExpression) {
+                        return new PaginationContext(null, null, params);
+                    }
                     rowCount = createRowNumberValueSegment(each.getRight(), false);
                     break;
                 case "<=":
+                    if (each.getRight() instanceof BinaryOperationExpression) {
+                        return new PaginationContext(null, null, params);
+                    }
                     rowCount = createRowNumberValueSegment(each.getRight(), true);
                     break;
                 default:
