@@ -4916,4 +4916,56 @@
             </expression-projection>
         </projections>
     </select>
+
+    <select sql-case-id="select_interval_with_subquery_containbinaryexpress">
+        <projections start-index="7" stop-index="9">
+            <column-projection name="age" start-index="7" stop-index="9"/>
+        </projections>
+        <from>
+            <subquery-table>
+                <subquery>
+                    <select>
+                        <projections start-index="24" stop-index="64">
+                            <expression-projection text="0-1岁" start-index="24" stop-index="33" alias="age"/>
+                            <aggregation-projection type="COUNT" start-index="35" stop-index="42" inner-expression="(*)" alias="countNum"/>
+                            <expression-projection text="0" start-index="54" stop-index="64" alias="sortNum"/>
+                        </projections>
+                        <from start-index="71" stop-index="91">
+                            <simple-table name="T_EMPI_PATIENT_INFO" start-index="71" stop-index="91" alias="t"/>
+                        </from>
+                        <where start-index="93" stop-index="161">
+                            <expr>
+                                <binary-operation-expression start-index="99" stop-index="161">
+                                    <operator>&gt;</operator>
+                                    <left>
+                                        <column name="birth" start-index="99" stop-index="105">
+                                            <owner name="t" start-index="99" stop-index="99"/>
+                                        </column>
+                                    </left>
+                                    <right>
+                                        <function text="to_char((sysdate - interval '1' year(3)), 'yyyymmdd')" function-name="to_char" start-index="109" stop-index="161">
+                                            <parameter>
+                                                <binary-operation-expression start-index="118" stop-index="147">
+                                                    <operator>-</operator>
+                                                    <left>
+                                                        <column name="sysdate" start-index="118" stop-index="124"/>
+                                                    </left>
+                                                    <right>
+                                                        <common-expression text="interval '1' year(3)" start-index="128" stop-index="147"/>
+                                                    </right>
+                                                </binary-operation-expression>
+                                            </parameter>
+                                            <parameter>
+                                                <literal-expression value="yyyymmdd" start-index="151" stop-index="160"/>
+                                            </parameter>
+                                        </function>
+                                    </right>
+                                </binary-operation-expression>
+                            </expr>
+                        </where>
+                    </select>
+                </subquery>
+            </subquery-table>
+        </from>
+    </select>
 </sql-parser-test-cases>

@@ -31,6 +31,19 @@ literals
     | bitValueLiterals
     | booleanLiterals
     | nullValueLiterals
+    | intervalLiterals
+    ;
+
+intervalLiterals
+    : INTERVAL stringLiterals intervalUnit (intervalPrecision)? (TO intervalUnit (intervalPrecision)?)?
+    ;
+
+intervalPrecision
+    : LP_ INTEGER_ RP_
+    ;
+
+intervalUnit
+    : SECOND | MINUTE | HOUR | DAY | MONTH | YEAR
     ;
 
 stringLiterals
