@@ -28,6 +28,10 @@ import org.apache.shardingsphere.infra.binder.segment.table.TablesContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
 import java.util.Collections;
 import java.util.List;
@@ -97,11 +101,29 @@ public final class EncryptAlgorithmMetaData {
         return projection instanceof ColumnProjection ? Optional.of((ColumnProjection) projection) : Optional.empty();
     }
     
-    private Optional<String> findTableName(final ColumnProjection columnProjection, final Map<String, String> columnTableNames) {
+    public Optional<String> findTableName(final ColumnProjection columnProjection, final Map<String, String> columnTableNames) {
         String tableName = columnTableNames.get(columnProjection.getExpression());
         if (null != tableName) {
             return Optional.of(tableName);
         }
+        
+        // 如果有子查询, 在子查询中获取columnProjection实际对应的表名
+        SelectStatement sqlStatement = selectStatementContext.getSqlStatement();
+        TableSegment tableSegment = sqlStatement.getFrom();
+        if (tableSegment instanceof SubqueryTableSegment) {
+            while (tableSegment instanceof SubqueryTableSegment) {
+                tableSegment = sqlStatement.getFrom();
+                if (tableSegment instanceof SimpleTableSegment) {
+                    break;
+                }
+                sqlStatement = ((SubqueryTableSegment) tableSegment).getSubquery().getSelect();
+            }
+            if (tableSegment instanceof SimpleTableSegment) {
+                String subqueryTableName = ((SimpleTableSegment) tableSegment).getTableName().getIdentifier().getValue();
+                return Optional.of(subqueryTableName);
+            }
+        }
+        
         for (String each : selectStatementContext.getTablesContext().getTableNames()) {
             if (encryptRule.findEncryptor(each, columnProjection.getName()).isPresent()) {
                 return Optional.of(each);
