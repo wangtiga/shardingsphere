@@ -30,18 +30,13 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Tab
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -243,4 +238,42 @@ public final class TablesContextTest {
         assertTrue(tablesContext.getSchemaName().isPresent());
         assertThat(tablesContext.getSchemaName().get(), is("sharding_db_1"));
     }
+    
+    /***
+     * 表的别名和子查询的别名大小写不同导致列名和表名对应关系建立错误
+     * SELECT * FROM
+     *     (SELECT T.*
+     *     FROM
+     *         (SELECT NAME
+     *         FROM T_EMPI_PATIENT_INFO s
+     *         WHERE EXISTS
+     *             (SELECT 1
+     *             FROM T_EMPI_PATIENT_SUSPECTED t
+     *             WHERE t.PATIENT_ID = s.PATIENT_ID
+     *                     AND t.ESI_ID = s.ESI_ID)
+     *             ORDER BY  s.UPDATE_TIME DESC) T)
+     */
+     @Test
+     public void assertCaseSensitivelyBetweenTableAliasAndSubqueryAlias() {
+         SimpleTableSegment table1 = new SimpleTableSegment(new TableNameSegment(48, 66, new IdentifierValue("T_EMPI_PATIENT_INFO")));
+         table1.setOwner(null);
+         table1.setAlias(new AliasSegment(68, 68, new IdentifierValue("s")));
+         SimpleTableSegment table2 = new SimpleTableSegment(new TableNameSegment(98, 121, new IdentifierValue("T_EMPI_PATIENT_SUSPECTED")));
+         table2.setOwner(null);
+         table2.setAlias(new AliasSegment(123, 123, new IdentifierValue("t")));
+         Collection<SimpleTableSegment> tables = new LinkedList<>();
+         tables.add(table1);
+         tables.add(table2);
+         TablesContext tablesContext = new TablesContext(tables, null);
+         Collection<ColumnProjection> columns = new LinkedList<>();
+         columns.add(new ColumnProjection("T", "NAME", null));
+         Map<String, Collection<String>> ownerColumnNames = tablesContext.getOwnerColumnNamesByColumnProjection(columns);
+         /***
+          * findTableNameFromSQL根据列名和所属关系查找对应的表
+          * 错误的列和表对应关系是 T.NAME -> T_EMPI_PATIENT_SUSPECTED
+          * 正确的列和表对应关系应该是 result中不包含T.NAME对应的表名
+          */
+         Map<String, String> result = tablesContext.findTableNameFromSQL(ownerColumnNames);
+         assertEquals(false, result.containsKey("T_EMPI_PATIENT_SUSPECTED"), "表的别名和子查询的别名大小写不同导致列名和表名对应关系建立错误");
+     }
 }
