@@ -18,7 +18,6 @@
 package org.apache.shardingsphere.encrypt.rewrite.token.generator;
 
 import lombok.Setter;
-import org.apache.shardingsphere.encrypt.exception.syntax.UnsupportedEncryptSQLException;
 import org.apache.shardingsphere.encrypt.rewrite.aware.DatabaseNameAware;
 import org.apache.shardingsphere.encrypt.rewrite.aware.EncryptConditionsAware;
 import org.apache.shardingsphere.encrypt.rewrite.aware.EncryptRuleAware;
@@ -105,7 +104,8 @@ public final class EncryptPredicateRightValueTokenGenerator
         if (encryptCondition instanceof EncryptBinaryCondition && "LIKE".equalsIgnoreCase(((EncryptBinaryCondition) encryptCondition).getOperator())) {
             Optional<String> likeQueryColumn = encryptRule.findLikeQueryColumn(encryptCondition.getTableName(), encryptCondition.getColumnName());
             if (!likeQueryColumn.isPresent()) {
-                throw new UnsupportedEncryptSQLException("LIKE");
+                // throw new UnsupportedEncryptSQLException("LIKE");
+                return originalValues;
             } else {
                 return encryptRule.getEncryptLikeQueryValues(databaseName, schemaName, encryptCondition.getTableName(), encryptCondition.getColumnName(), originalValues);
             }

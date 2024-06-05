@@ -97,6 +97,12 @@ rules:
           plainColumn: plain_amount
           encryptorName: rewrite_normal_fixture
       queryWithCipherColumn: false
+    t_mac:
+      columns:
+        password:
+          cipherColumn: mac_password
+          plainColumn: plain_password
+          encryptorName: rewrite_normal_fixture
   encryptors:
     rewrite_normal_fixture:
       type: REWRITE.NORMAL.FIXTURE
