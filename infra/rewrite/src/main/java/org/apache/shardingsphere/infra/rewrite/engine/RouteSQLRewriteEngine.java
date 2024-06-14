@@ -93,7 +93,11 @@ public final class RouteSQLRewriteEngine {
     private void addSQLRewriteUnits(final Map<RouteUnit, SQLRewriteUnit> sqlRewriteUnits, final SQLRewriteContext sqlRewriteContext,
                                     final RouteContext routeContext, final Collection<RouteUnit> routeUnits) {
         for (RouteUnit each : routeUnits) {
-            sqlRewriteUnits.put(each, new SQLRewriteUnit(new RouteSQLBuilder(sqlRewriteContext, each).toSQL(), getParameters(sqlRewriteContext.getParameterBuilder(), routeContext, each)));
+            sqlRewriteUnits.put(each,
+                    new SQLRewriteUnit(new RouteSQLBuilder(sqlRewriteContext, each).toSQL(),
+                            sqlRewriteContext.getParameterBuilder().getParameters().isEmpty() ? sqlRewriteContext.getParameters()
+                                    : getParameters(sqlRewriteContext.getParameterBuilder(), routeContext, each)));
+            // new SQLRewriteUnit(new RouteSQLBuilder(sqlRewriteContext, each).toSQL(), getParameters(sqlRewriteContext.getParameterBuilder(), routeContext, each)));
         }
     }
     
