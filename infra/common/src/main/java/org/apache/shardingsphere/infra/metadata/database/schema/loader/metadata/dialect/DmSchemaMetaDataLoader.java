@@ -29,13 +29,23 @@ import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.Tab
 import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
- * Schema meta data loader for dm
+ * Schema meta data loader for dm.
  */
 public final class DmSchemaMetaDataLoader implements DialectSchemaMetaDataLoader {
     

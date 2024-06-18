@@ -35,12 +35,18 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.And
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public final class RowNumberPaginationContextEngineTest {
     
@@ -112,10 +118,14 @@ public final class RowNumberPaginationContextEngineTest {
         assertThat(offSetSegmentPaginationValue.get(), instanceOf(ParameterMarkerRowNumberValueSegment.class));
         assertFalse(paginationContext.getRowCountSegment().isPresent());
     }
-
-    /***
-     * SELECT ROWNUM AS RN FROM T_EMPI_PATIENT_INDEX WHERE ROWNUM <= to_number('1') * to_number('10')
-     * this sql execute throw java.lang.ClassCastException, BinaryOperationExpression cannot be cast ParameterMarkerExpressionSegment
+    
+    /**
+     * ROWNUM with alias is complict with rownum in where.
+     *
+     * <p>
+     * SELECT ROWNUM AS RN FROM T_EMPI_PATIENT_INDEX WHERE ROWNUM <= to_number('1') * to_number('10'),
+     * this sql execute throw java.lang.ClassCastException, BinaryOperationExpression cannot be cast ParameterMarkerExpressionSegment.
+     * </p>
      */
     @Test
     public void assertCreatePaginationWithRowNumberTest() {
@@ -128,15 +138,14 @@ public final class RowNumberPaginationContextEngineTest {
         BinaryOperationExpression expression = new BinaryOperationExpression(52, 93, left, right, "<=", "ROWNUM <= to_number('1') * to_number('10')");
         Collection<ExpressionSegment> expressions = new LinkedList<>();
         expressions.add(expression);
-
+        
         Collection<Projection> projections = new LinkedList<>();
         projections.add(new ColumnProjection(null, "ROWNUM", "RN"));
         ProjectionsContext projectionsContext = new ProjectionsContext(7, 18, false, projections);
         final List<Object> params = new LinkedList<>();
-
+        
         assertNotNull(new RowNumberPaginationContextEngine().createPaginationContext(expressions, projectionsContext, params));
     }
-
     
     private void assertCreatePaginationContextWhenRowNumberAliasPresentAndRowNumberPredicatedNotEmptyWithGivenOperator(final String operator) {
         Projection projectionWithRowNumberAlias = new ColumnProjection(null, ROW_NUMBER_COLUMN_NAME, ROW_NUMBER_COLUMN_ALIAS);

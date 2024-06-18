@@ -34,7 +34,17 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Sim
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Tables context.
@@ -214,12 +224,16 @@ public final class TablesContext {
         return result;
     }
     
+    /**
+     * create a case sensitive map.
+     * @param columns column projections
+     * @return map of owner and it's columns
+     */
     public Map<String, Collection<String>> getOwnerColumnNamesByColumnProjection(final Collection<ColumnProjection> columns) {
         Map<String, Collection<String>> result = new TreeMap<>(new Comparator<String>() {
             
-            // 使用默认的字符串比较规则，这将保持大小写敏感
             @Override
-            public int compare(String str1, String str2) {
+            public int compare(final String str1, final String str2) {
                 return str1.compareTo(str2);
             }
         });
@@ -231,6 +245,11 @@ public final class TablesContext {
         return result;
     }
     
+    /**
+     * findTableNameFromSQL.
+     * @param ownerColumnNames map of owner and it's columns
+     * @return map of column name and it's table name
+     */
     public Map<String, String> findTableNameFromSQL(final Map<String, Collection<String>> ownerColumnNames) {
         if (ownerColumnNames.isEmpty()) {
             return Collections.emptyMap();

@@ -101,6 +101,14 @@ public final class EncryptAlgorithmMetaData {
         return projection instanceof ColumnProjection ? Optional.of((ColumnProjection) projection) : Optional.empty();
     }
     
+    /**
+     * find actual table name.
+     *
+     * @param columnProjection columnProjection
+     * @param columnTableNames columnTableNames
+     * @return table name
+     *
+     * */
     public Optional<String> findTableName(final ColumnProjection columnProjection, final Map<String, String> columnTableNames) {
         String tableName = columnTableNames.get(columnProjection.getExpression());
         if (null != tableName) {

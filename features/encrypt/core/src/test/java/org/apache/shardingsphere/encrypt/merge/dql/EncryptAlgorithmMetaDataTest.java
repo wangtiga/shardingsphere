@@ -39,7 +39,6 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Tab
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.dml.OracleSelectStatement;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,11 +48,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -149,11 +155,13 @@ public final class EncryptAlgorithmMetaDataTest {
     }
     
     /**
-     * 子查询中获取列实际对应的表的逻辑不对,一个字段在多个表中存在时就以第一个查找到的表名作为字段对应的表名
+     * 子查询中获取列实际对应的表的逻辑不对,一个字段在多个表中存在时就以第一个查找到的表名作为字段对应的表名.
+     *
+     * <p>
      * select * from( select T.*, ROWNUM as RN from ( select ID, NAME from T_EMPI_PATIENT_INDEX where id in ( select s.idx_no from T_EMPI_PATIENT_INFO s where s.NAME = '张三')) T)
      * 错误的对应关系是 重写后最外层的NAME字段对应 T_EMPI_PATIENT_INFO, 因为存在密文规则中存在T_EMPI_PATIENT_INFO的NAME字段
      * 正确的对应关系是 重写后最外层的NAME字段对应 T_EMPI_PATIENT_INDEX
-     * @return
+     * </p>
      */
     @Test
     public void assertColumnNameExistsNotSingleTable() {

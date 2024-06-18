@@ -104,7 +104,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     private boolean needAggregateRewrite;
     
     private PaginationContext paginationContext;
-
+    
     public SelectStatementContext(final SelectStatement sqlStatement) {
         super(sqlStatement);
         tablesContext = null;
