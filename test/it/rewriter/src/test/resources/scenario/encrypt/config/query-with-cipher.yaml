@@ -97,6 +97,11 @@ rules:
           plainColumn: plain_amount
           encryptorName: rewrite_normal_fixture
       queryWithCipherColumn: false
+    t_insert_select:
+      columns:
+        name:
+          cipherColumn: name
+          encryptorName: rewrite_normal_fixture
   encryptors:
     rewrite_normal_fixture:
       type: REWRITE.NORMAL.FIXTURE

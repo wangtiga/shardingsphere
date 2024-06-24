@@ -73,6 +73,7 @@ public final class EncryptSQLRewriterIT extends SQLRewriterIT {
         when(result.getVisibleColumnNames("t_account_detail")).thenReturn(Arrays.asList("account_id", "certificate_number", "password", "amount"));
         when(result.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("ORDER_ID", "USER_ID", "CONTENT"));
         when(result.getTable("t_order")).thenReturn(new ShardingSphereTable("t_order", Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
+        when(result.getVisibleColumnNames("t_insert_select")).thenReturn(Arrays.asList("id", "name"));
         return Collections.singletonMap(schemaName, result);
     }
     
@@ -84,6 +85,7 @@ public final class EncryptSQLRewriterIT extends SQLRewriterIT {
             singleRule.get().put("encrypt_ds", schemaName, "t_account_bak");
             singleRule.get().put("encrypt_ds", schemaName, "t_account_detail");
             singleRule.get().put("encrypt_ds", schemaName, "t_order");
+            singleRule.get().put("encrypt_ds", schemaName, "t_insert_select");
         }
     }
     
