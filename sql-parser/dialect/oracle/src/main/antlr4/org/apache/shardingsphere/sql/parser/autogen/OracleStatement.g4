@@ -17,7 +17,7 @@
 
 grammar OracleStatement;
 
-import DMLStatement, TCLStatement, DCLStatement, DALStatement, StoreProcedure;
+import DMLStatement, TCLStatement, DCLStatement, DALStatement, StoreProcedure, PLSQL;
 
 execute
     : (select
@@ -134,5 +134,6 @@ execute
     | dropMaterializedZonemap
     | alterResourceCost
     | alterRole
+    | plsqlBlock
     ) SEMI_?
     ;

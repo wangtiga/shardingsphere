@@ -129,15 +129,20 @@ import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.Modify
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.ModifyConstraintClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.NoAuditContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OperateColumnClauseContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OwnerContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OutOfLineConstraintContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OutOfLineRefConstraintContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.PackageNameContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.PlsqlBlockContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.PlsqlFunctionSourceContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.PurgeContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.RelationalPropertyContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.RenameContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.SqlStatementInPlsqlContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TableNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TruncateTableContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TypeNameContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementVisitor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.AlterDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.CreateDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.ColumnDefinitionSegment;
@@ -152,12 +157,16 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.al
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexTypeSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.packages.PackageSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.routine.FunctionNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.type.TypeSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.FunctionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DataTypeSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.collection.CollectionValue;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterAnalyticViewStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterAttributeDimensionStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterAuditPolicyStatement;
@@ -229,6 +238,16 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.Ora
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropJavaStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropLibraryStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropLockdownProfileStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropLockdownProfileStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropMaterializedViewLogStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropMaterializedViewStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropMaterializedZonemapStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropOperatorStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropIndexTypeStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropInmemoryJoinGroupStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropJavaStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropLibraryStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropLockdownProfileStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropMaterializedViewLogStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropMaterializedViewStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropMaterializedZonemapStatement;
@@ -247,13 +266,13 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.Ora
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleFlashbackTableStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleNoAuditStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OraclePurgeStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OraclePLSQLBlockStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleRenameStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleTruncateStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.plsql.ProcedureCallNameSegment;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.plsql.SQLStatementSegment;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * DDL Statement SQL visitor for Oracle.
@@ -799,6 +818,34 @@ public final class OracleDDLStatementSQLVisitor extends OracleStatementSQLVisito
     @Override
     public ASTNode visitCreateFunction(final CreateFunctionContext ctx) {
         return new OracleCreateFunctionStatement();
+        // return visitCreateFunction0(ctx);
+    }
+    
+    private ASTNode visitCreateFunction0(final CreateFunctionContext ctx) {
+        if (null != ctx.plsqlFunctionSource().declareSection()) {
+            visit(ctx.plsqlFunctionSource().declareSection());
+        }
+        if (null != ctx.plsqlFunctionSource().body()) {
+            visit(ctx.plsqlFunctionSource().body());
+        }
+        getSqlStatementsInPlsql().sort(Comparator.comparingInt(SQLStatementSegment::getStartIndex));
+        getProcedureCallNames().sort(Comparator.comparingInt(ProcedureCallNameSegment::getStartIndex));
+        getDynamicSqlStatementExpressions().sort(Comparator.comparingInt(ExpressionSegment::getStartIndex));
+        OracleCreateFunctionStatement result = new OracleCreateFunctionStatement(getSqlStatementsInPlsql(), getProcedureCallNames(), getDynamicSqlStatementExpressions());
+        result.setFunctionName(visitFunctionName(ctx.plsqlFunctionSource()));
+        return result;
+    }
+    
+    private FunctionNameSegment visitFunctionName(final PlsqlFunctionSourceContext ctx) {
+        OwnerContext schema = ctx.function().owner();
+        IdentifierValue functionName = (IdentifierValue) visit(ctx.function().name().identifier());
+        if (null == schema) {
+            return new FunctionNameSegment(ctx.function().name().start.getStartIndex(), ctx.function().name().stop.getStopIndex(), functionName);
+        }
+        OwnerSegment owner = new OwnerSegment(schema.start.getStartIndex(), schema.stop.getStopIndex(), (IdentifierValue) visit(schema.identifier()));
+        FunctionNameSegment result = new FunctionNameSegment(ctx.function().start.getStartIndex(), ctx.function().stop.getStopIndex(), functionName);
+        result.setOwner(owner);
+        return result;
     }
     
     @Override
@@ -1050,4 +1097,93 @@ public final class OracleDDLStatementSQLVisitor extends OracleStatementSQLVisito
     public ASTNode visitDropMaterializedZonemap(final DropMaterializedZonemapContext ctx) {
         return new OracleDropMaterializedZonemapStatement();
     }
+    
+    // @Override
+    // public ASTNode visitSqlStatementInPlsql(final SqlStatementInPlsqlContext ctx) {
+    // if (null != ctx.commit()) {
+    // OracleStatementSQLVisitor visitor = createOracleTCLStatementVisitor();
+    // SQLStatement result = (SQLStatement) visitor.visitCommit(ctx.commit());
+    // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.commit().start.getStartIndex(), ctx.commit().stop.getStopIndex(), result));
+    // addToTempCursorForLoopStatements(result);
+    // }
+    //
+    // // // TODO visit collection_method_call
+    // // if (null != ctx.delete()) {
+    // // OracleStatementVisitor visitor = createOracleDMLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitDelete(ctx.delete());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.delete().start.getStartIndex(), ctx.delete().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    // // if (null != ctx.insert()) {
+    // // OracleStatementVisitor visitor = createOracleDMLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitInsert(ctx.insert());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.insert().start.getStartIndex(), ctx.insert().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    // // if (null != ctx.lockTable()) {
+    // // OracleStatementVisitor visitor = createOracleDMLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitLockTable(ctx.lockTable());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.lockTable().start.getStartIndex(), ctx.lockTable().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    // // if (null != ctx.merge()) {
+    // // OracleStatementVisitor visitor = createOracleDMLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitMerge(ctx.merge());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.merge().start.getStartIndex(), ctx.merge().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    // // if (null != ctx.rollback()) {
+    // // OracleStatementVisitor visitor = createOracleTCLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitRollback(ctx.rollback());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.rollback().start.getStartIndex(), ctx.rollback().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    // // if (null != ctx.savepoint()) {
+    // // OracleStatementVisitor visitor = createOracleTCLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitSavepoint(ctx.savepoint());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.savepoint().start.getStartIndex(), ctx.savepoint().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    // // if (null != ctx.setTransaction()) {
+    // // OracleStatementVisitor visitor = createOracleTCLStatementVisitor();
+    // // SQLStatement result = (SQLStatement) visitor.visitSetTransaction(ctx.setTransaction());
+    // // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.setTransaction().start.getStartIndex(), ctx.setTransaction().stop.getStopIndex(), result));
+    // // addToTempCursorForLoopStatements(result);
+    // // }
+    //
+    // if (null != ctx.update()) {
+    // OracleStatementVisitor visitor = createOracleDMLStatementVisitor();
+    // SQLStatement result = (SQLStatement) visitor.visitUpdate(ctx.update());
+    // getSqlStatementsInPlsql().add(new SQLStatementSegment(ctx.update().start.getStartIndex(), ctx.update().stop.getStopIndex(), result));
+    // addToTempCursorForLoopStatements(result);
+    // }
+    //
+    // return defaultResult();
+    // }
+    
+    @Override
+    public ASTNode visitPlsqlBlock(final PlsqlBlockContext ctx) {
+        return new OraclePLSQLBlockStatement();
+    }
+    
+    // private OracleStatementSQLVisitor createOracleTCLStatementVisitor() {
+    // OracleStatementSQLVisitor result = new OracleTCLStatementSQLVisitor();
+    // result.getVariableNames().addAll(getVariableNames());
+    // return result;
+    // }
+    //
+    // private OracleStatementSQLVisitor createOracleDMLStatementVisitor() {
+    // OracleStatementSQLVisitor result = new OracleDMLStatementSQLVisitor();
+    // result.getVariableNames().addAll(getVariableNames());
+    // return result;
+    // }
+    //
+    // private void addToTempCursorForLoopStatements(final SQLStatement sqlStatement) {
+    // if (0 == getCursorForLoopLevel()) {
+    // return;
+    // }
+    // for (int i = 1; i <= getCursorForLoopLevel(); i++) {
+    // getTempCursorForLoopStatements().computeIfAbsent(i, key -> new LinkedHashSet<>()).add(sqlStatement);
+    // }
+    // }
 }

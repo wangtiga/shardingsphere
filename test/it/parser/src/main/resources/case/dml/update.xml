@@ -1125,4 +1125,6 @@
             </expr>
         </where>
     </update>
+
+    <update sql-case-id="update_in_plsql"/>
 </sql-parser-test-cases>

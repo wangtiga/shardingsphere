@@ -159,6 +159,8 @@ public enum SQLVisitorRule {
     
     CREATE_LOGFILE_GROUP("CreateLogfileGroup", SQLStatementType.DDL),
     
+    PLSQL_BLOCK("PlsqlBlock", SQLStatementType.DDL),
+    
     ALTER_LOGFILE_GROUP("AlterLogfileGroup", SQLStatementType.DDL),
     
     DROP_LOGFILE_GROUP("DropLogfileGroup", SQLStatementType.DDL),

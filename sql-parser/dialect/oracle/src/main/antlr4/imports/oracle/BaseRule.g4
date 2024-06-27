@@ -1703,3 +1703,15 @@ xmlTableOptions
 xmlTableColumn
     : columnName (FOR ORDINALITY | (dataType | XMLTYPE (LP_ SEQUENCE RP_ BY REF)?) (PATH STRING_)? (DEFAULT expr)?)
     ;
+
+typeAttribute
+    : (variableName | objectName) MOD_ TYPE
+    ;
+
+subprogramName
+    : identifier
+    ;
+
+methodName
+    : identifier
+    ;

@@ -2180,4 +2180,5 @@
             </value>
         </values>
     </insert>
+    <insert sql-case-id="insert_with_plsql"/>
 </sql-parser-test-cases>

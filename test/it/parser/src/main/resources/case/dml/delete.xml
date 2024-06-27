@@ -690,4 +690,6 @@
             <owner name="db1" start-index="12" stop-index="14" />
         </table>
     </delete>
+
+    <delete sql-case-id="delete_with_plsql"/>
 </sql-parser-test-cases>
