@@ -21,8 +21,11 @@ import org.apache.shardingsphere.infra.binder.segment.select.pagination.Paginati
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.ProjectionsContext;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ColumnProjection;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.FunctionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.PaginationValueSegment;
@@ -32,14 +35,18 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.And
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public final class RowNumberPaginationContextEngineTest {
     
@@ -110,6 +117,34 @@ public final class RowNumberPaginationContextEngineTest {
         assertTrue(offSetSegmentPaginationValue.isPresent());
         assertThat(offSetSegmentPaginationValue.get(), instanceOf(ParameterMarkerRowNumberValueSegment.class));
         assertFalse(paginationContext.getRowCountSegment().isPresent());
+    }
+    
+    /**
+     * ROWNUM with alias is complict with rownum in where.
+     *
+     * <p>
+     * SELECT ROWNUM AS RN FROM T_EMPI_PATIENT_INDEX WHERE ROWNUM <= to_number('1') * to_number('10'),
+     * this sql execute throw java.lang.ClassCastException, BinaryOperationExpression cannot be cast ParameterMarkerExpressionSegment.
+     * </p>
+     */
+    @Test
+    public void assertCreatePaginationWithRowNumberTest() {
+        ColumnSegment left = new ColumnSegment(52, 57, new IdentifierValue("ROWNUM", QuoteCharacter.NONE));
+        FunctionSegment leftFunction = new FunctionSegment(62, 75, "to_number", "to_number('1')");
+        leftFunction.setOwner(null);
+        FunctionSegment rightFunction = new FunctionSegment(79, 93, "to_number", "to_number('10')");
+        rightFunction.setOwner(null);
+        BinaryOperationExpression right = new BinaryOperationExpression(62, 93, leftFunction, rightFunction, "*", "to_number('1') * to_number('10')");
+        BinaryOperationExpression expression = new BinaryOperationExpression(52, 93, left, right, "<=", "ROWNUM <= to_number('1') * to_number('10')");
+        Collection<ExpressionSegment> expressions = new LinkedList<>();
+        expressions.add(expression);
+        
+        Collection<Projection> projections = new LinkedList<>();
+        projections.add(new ColumnProjection(null, "ROWNUM", "RN"));
+        ProjectionsContext projectionsContext = new ProjectionsContext(7, 18, false, projections);
+        final List<Object> params = new LinkedList<>();
+        
+        assertNotNull(new RowNumberPaginationContextEngine().createPaginationContext(expressions, projectionsContext, params));
     }
     
     private void assertCreatePaginationContextWhenRowNumberAliasPresentAndRowNumberPredicatedNotEmptyWithGivenOperator(final String operator) {

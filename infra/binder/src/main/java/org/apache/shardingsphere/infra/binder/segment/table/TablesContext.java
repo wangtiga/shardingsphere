@@ -36,10 +36,11 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Tab
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -223,8 +224,19 @@ public final class TablesContext {
         return result;
     }
     
-    private Map<String, Collection<String>> getOwnerColumnNamesByColumnProjection(final Collection<ColumnProjection> columns) {
-        Map<String, Collection<String>> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    /**
+     * create a case sensitive map.
+     * @param columns column projections
+     * @return map of owner and it's columns
+     */
+    public Map<String, Collection<String>> getOwnerColumnNamesByColumnProjection(final Collection<ColumnProjection> columns) {
+        Map<String, Collection<String>> result = new TreeMap<>(new Comparator<String>() {
+            
+            @Override
+            public int compare(final String str1, final String str2) {
+                return str1.compareTo(str2);
+            }
+        });
         for (ColumnProjection each : columns) {
             if (null != each.getOwner()) {
                 result.computeIfAbsent(each.getOwner(), unused -> new LinkedList<>()).add(each.getExpression());
@@ -233,7 +245,12 @@ public final class TablesContext {
         return result;
     }
     
-    private Map<String, String> findTableNameFromSQL(final Map<String, Collection<String>> ownerColumnNames) {
+    /**
+     * findTableNameFromSQL.
+     * @param ownerColumnNames map of owner and it's columns
+     * @return map of column name and it's table name
+     */
+    public Map<String, String> findTableNameFromSQL(final Map<String, Collection<String>> ownerColumnNames) {
         if (ownerColumnNames.isEmpty()) {
             return Collections.emptyMap();
         }

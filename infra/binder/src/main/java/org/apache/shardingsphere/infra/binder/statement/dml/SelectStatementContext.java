@@ -105,6 +105,15 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     
     private PaginationContext paginationContext;
     
+    public SelectStatementContext(final SelectStatement sqlStatement) {
+        super(sqlStatement);
+        tablesContext = null;
+        projectionsContext = null;
+        groupByContext = null;
+        orderByContext = null;
+        subqueryContexts = null;
+    }
+    
     public SelectStatementContext(final ShardingSphereMetaData metaData, final List<Object> params, final SelectStatement sqlStatement, final String defaultDatabaseName) {
         super(sqlStatement);
         extractWhereSegments(whereSegments, sqlStatement);

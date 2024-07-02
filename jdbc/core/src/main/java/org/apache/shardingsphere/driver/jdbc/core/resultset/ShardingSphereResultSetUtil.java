@@ -70,7 +70,7 @@ public final class ShardingSphereResultSetUtil {
     }
     
     // 过滤空格
-    private static String getStrWithoutSpace(String str) {
+    private static String getStrWithoutSpace(final String str) {
         StringBuilder sp = new StringBuilder();
         for (char c : str.toCharArray()) {
             if (c == ' ') {
