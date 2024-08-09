@@ -36,7 +36,6 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Tab
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -230,13 +229,7 @@ public final class TablesContext {
      * @return map of owner and it's columns
      */
     public Map<String, Collection<String>> getOwnerColumnNamesByColumnProjection(final Collection<ColumnProjection> columns) {
-        Map<String, Collection<String>> result = new TreeMap<>(new Comparator<String>() {
-            
-            @Override
-            public int compare(final String str1, final String str2) {
-                return str1.compareTo(str2);
-            }
-        });
+        Map<String, Collection<String>> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (ColumnProjection each : columns) {
             if (null != each.getOwner()) {
                 result.computeIfAbsent(each.getOwner(), unused -> new LinkedList<>()).add(each.getExpression());
