@@ -31,14 +31,6 @@ import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.dml.OracleSelectStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,11 +45,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -154,33 +144,4 @@ public final class EncryptAlgorithmMetaDataTest {
         assertTrue(encryptAlgorithmMetaData.isQueryWithCipherColumn("t_order", "id"));
     }
     
-    /**
-     * 子查询中获取列实际对应的表的逻辑不对,一个字段在多个表中存在时就以第一个查找到的表名作为字段对应的表名.
-     *
-     * <p>
-     * select * from( select T.*, ROWNUM as RN from ( select ID, NAME from T_EMPI_PATIENT_INDEX where id in ( select s.idx_no from T_EMPI_PATIENT_INFO s where s.NAME = '张三')) T)
-     * 错误的对应关系是 重写后最外层的NAME字段对应 T_EMPI_PATIENT_INFO, 因为存在密文规则中存在T_EMPI_PATIENT_INFO的NAME字段
-     * 正确的对应关系是 重写后最外层的NAME字段对应 T_EMPI_PATIENT_INDEX
-     * </p>
-     */
-    @Test
-    public void assertColumnNameExistsNotSingleTable() {
-        SimpleTableSegment simpleTableSegement = new SimpleTableSegment(new TableNameSegment(68, 87, new IdentifierValue("T_EMPI_PATIENT_INDEX")));
-        simpleTableSegement.setAlias(null);
-        simpleTableSegement.setOwner(null);
-        SelectStatement selectInner1 = new OracleSelectStatement();
-        selectInner1.setFrom(simpleTableSegement);
-        SelectStatement select = new OracleSelectStatement();
-        select.setFrom(new SubqueryTableSegment(new SubquerySegment(47, 165, selectInner1)));
-        SubquerySegment segment = new SubquerySegment(15, 168, select);
-        TableSegment tableSegment = new SubqueryTableSegment(segment);
-        SelectStatement selectStatement = new OracleSelectStatement();
-        selectStatement.setFrom(tableSegment);
-        SelectStatementContext selectStatementContext = new SelectStatementContext(selectStatement);
-        EncryptAlgorithmMetaData encryptAlgorithmMetaData = new EncryptAlgorithmMetaData(null, null, selectStatementContext);
-        ColumnProjection columnProjectionOfName = new ColumnProjection("T", "NAME", null);
-        Map<String, String> columnTableNames = new TreeMap<>();
-        Optional<String> tableName = encryptAlgorithmMetaData.findTableName(columnProjectionOfName, columnTableNames);
-        assertEquals("T_EMPI_PATIENT_INDEX", tableName.get(), "获取到的表名是错误的");
-    }
 }

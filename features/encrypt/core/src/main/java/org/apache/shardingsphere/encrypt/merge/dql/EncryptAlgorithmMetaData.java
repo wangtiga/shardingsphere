@@ -28,10 +28,10 @@ import org.apache.shardingsphere.infra.binder.segment.table.TablesContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
 import java.util.Collections;
 import java.util.List;
@@ -116,19 +116,10 @@ public final class EncryptAlgorithmMetaData {
         }
         
         // 如果有子查询, 在子查询中获取columnProjection实际对应的表名
-        SelectStatement sqlStatement = selectStatementContext.getSqlStatement();
-        TableSegment tableSegment = sqlStatement.getFrom();
-        if (tableSegment instanceof SubqueryTableSegment) {
-            while (tableSegment instanceof SubqueryTableSegment) {
-                tableSegment = sqlStatement.getFrom();
-                if (tableSegment instanceof SimpleTableSegment) {
-                    break;
-                }
-                sqlStatement = ((SubqueryTableSegment) tableSegment).getSubquery().getSelect();
-            }
-            if (tableSegment instanceof SimpleTableSegment) {
-                String subqueryTableName = ((SimpleTableSegment) tableSegment).getTableName().getIdentifier().getValue();
-                return Optional.of(subqueryTableName);
+        if (selectStatementContext.getSqlStatement() != null && selectStatementContext.getSqlStatement().getFrom() != null) {
+            Optional<String> subQueryTableName = findSubQueryTableName(columnProjection, selectStatementContext.getSqlStatement().getFrom());
+            if (subQueryTableName.isPresent()) {
+                return subQueryTableName;
             }
         }
         
@@ -137,6 +128,43 @@ public final class EncryptAlgorithmMetaData {
                 return Optional.of(each);
             }
         }
+        return Optional.empty();
+    }
+    
+    /**
+     * find actual table name from sub query(without where sub query).
+     *
+     * @param columnProjection columnProjection
+     * @param tableSegment tableSegment
+     * @return table name
+     *
+     * */
+    private Optional<String> findSubQueryTableName(final ColumnProjection columnProjection, final TableSegment tableSegment) {
+        if (tableSegment == null) {
+            return Optional.empty();
+        }
+        if (tableSegment instanceof SimpleTableSegment) {
+            SimpleTableSegment simpleTableSegment = (SimpleTableSegment) tableSegment;
+            String tableName = simpleTableSegment.getTableName().getIdentifier().getValue();
+            if (encryptRule.findEncryptor(tableName, columnProjection.getName()).isPresent()) {
+                return Optional.of(tableName);
+            }
+        } else if (tableSegment instanceof JoinTableSegment) {
+            JoinTableSegment joinTableSegment = (JoinTableSegment) tableSegment;
+            Optional<String> leftJoinTableName = findSubQueryTableName(columnProjection, joinTableSegment.getLeft());
+            if (leftJoinTableName.isPresent() && encryptRule.findEncryptor(leftJoinTableName.get(), columnProjection.getName()).isPresent()) {
+                return leftJoinTableName;
+            }
+            Optional<String> rightJoinTableName = findSubQueryTableName(columnProjection, joinTableSegment.getRight());
+            if (rightJoinTableName.isPresent() && encryptRule.findEncryptor(rightJoinTableName.get(), columnProjection.getName()).isPresent()) {
+                return rightJoinTableName;
+            }
+        } else if (tableSegment instanceof SubqueryTableSegment) {
+            SubqueryTableSegment subqueryTableSegment = (SubqueryTableSegment) tableSegment;
+            TableSegment subquerySelectFrom = subqueryTableSegment.getSubquery().getSelect().getFrom();
+            return findSubQueryTableName(columnProjection, subquerySelectFrom);
+        }
+        
         return Optional.empty();
     }
 }
