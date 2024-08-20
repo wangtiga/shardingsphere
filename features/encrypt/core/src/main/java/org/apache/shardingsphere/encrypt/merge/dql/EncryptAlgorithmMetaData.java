@@ -161,8 +161,8 @@ public final class EncryptAlgorithmMetaData {
             }
         } else if (tableSegment instanceof SubqueryTableSegment) {
             SubqueryTableSegment subqueryTableSegment = (SubqueryTableSegment) tableSegment;
-            TableSegment subquerySelectFrom = subqueryTableSegment.getSubquery().getSelect().getFrom();
-            return findSubQueryTableName(columnProjection, subquerySelectFrom);
+            TableSegment subQuerySelectFrom = subqueryTableSegment.getSubquery().getSelect().getFrom();
+            return findSubQueryTableName(columnProjection, subQuerySelectFrom);
         }
         
         return Optional.empty();
