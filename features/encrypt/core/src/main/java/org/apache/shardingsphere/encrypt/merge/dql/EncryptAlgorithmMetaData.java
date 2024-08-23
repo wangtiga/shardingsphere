@@ -114,6 +114,9 @@ public final class EncryptAlgorithmMetaData {
         if (null != tableName) {
             return Optional.of(tableName);
         }
+        if (selectStatementContext == null) {
+            return Optional.empty();
+        }
         
         // 如果有子查询, 在子查询中获取columnProjection实际对应的表名
         if (selectStatementContext.getSqlStatement() != null && selectStatementContext.getSqlStatement().getFrom() != null) {
