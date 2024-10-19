@@ -20,5 +20,6 @@ org.apache.shardingsphere.transaction.xa.jta.connection.dialect.MySQLXAConnectio
 org.apache.shardingsphere.transaction.xa.jta.connection.dialect.MariaDBXAConnectionWrapper
 org.apache.shardingsphere.transaction.xa.jta.connection.dialect.OracleXAConnectionWrapper
 org.apache.shardingsphere.transaction.xa.jta.connection.dialect.DMXAConnectionWrapper
+org.apache.shardingsphere.transaction.xa.jta.connection.dialect.KingbaseXAConnectionWrapper
 org.apache.shardingsphere.transaction.xa.jta.connection.dialect.H2XAConnectionWrapper
 org.apache.shardingsphere.transaction.xa.jta.connection.dialect.OpenGaussXAConnectionWrapper

@@ -86,6 +86,8 @@ public final class DataSourceUtils {
                 return String.format("jdbc:oracle:thin:@//localhost:1521/%s", databaseName);
             case "dm":
                 return String.format("jdbc:dm://localhost:30236/%s", databaseName);
+            case "kingbase8":
+                return String.format("jdbc:kingbase8://localhost:54321/%s", databaseName);
             case "SQLServer":
                 return String.format("jdbc:sqlserver://localhost:1433;DatabaseName=%s", databaseName);
             case "H2":

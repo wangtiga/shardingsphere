@@ -21,5 +21,6 @@ org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.Postg
 org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.OpenGaussXADataSourceDefinition
 org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.OracleXADataSourceDefinition
 org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.DMXADataSourceDefinition
+org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.KingbaseXADataSourceDefinition
 org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.SQLServerXADataSourceDefinition
 org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.H2XADataSourceDefinition
