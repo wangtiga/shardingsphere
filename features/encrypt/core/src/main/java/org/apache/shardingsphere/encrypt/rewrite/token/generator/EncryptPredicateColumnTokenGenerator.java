@@ -18,7 +18,6 @@
 package org.apache.shardingsphere.encrypt.rewrite.token.generator;
 
 import lombok.Setter;
-import org.apache.shardingsphere.encrypt.exception.syntax.UnsupportedEncryptSQLException;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
 import org.apache.shardingsphere.encrypt.rule.EncryptTable;
 import org.apache.shardingsphere.encrypt.rewrite.aware.EncryptRuleAware;
@@ -99,8 +98,7 @@ public final class EncryptPredicateColumnTokenGenerator implements CollectionSQL
                 if (likeQueryColumn.isPresent()) {
                     result.add(new SubstitutableColumnNameToken(startIndex, stopIndex, createColumnProjections(likeQueryColumn.get())));
                     continue;
-                } else {
-                    throw new UnsupportedEncryptSQLException("LIKE");
+                    // 兼容 FPE 算法，允许模糊查询，移除异常 throw new UnsupportedEncryptSQLException("LIKE");
                 }
             }
             Optional<String> assistedQueryColumn = encryptTable.get().findAssistedQueryColumn(each.getIdentifier().getValue());
