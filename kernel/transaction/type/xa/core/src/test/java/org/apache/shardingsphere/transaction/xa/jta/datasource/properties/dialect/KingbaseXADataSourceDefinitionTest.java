@@ -28,6 +28,6 @@ public final class KingbaseXADataSourceDefinitionTest {
     
     @Test
     public void assertGetXADriverClassName() {
-        assertThat(new KingbaseXADataSourceDefinition().getXADriverClassNames(), is(Collections.singletonList("com.kingbase8.KBXADataSource")));
+        assertThat(new KingbaseXADataSourceDefinition().getXADriverClassNames(), is(Collections.singletonList("com.kingbase8.xa.KBXADataSource")));
     }
 }

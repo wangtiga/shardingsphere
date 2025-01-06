@@ -712,10 +712,6 @@ DOCUMENT
     : D O C U M E N T
     ;
 
-CONTENT
-    : C O N T E N T
-    ;
-
 WELLFORMED
     : W E L L F O R M E D
     ;
